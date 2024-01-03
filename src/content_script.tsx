@@ -11,6 +11,9 @@ class ContentScript {
   }
 
   public async resOpenai(imageUrl: string) {
+    const textarea = document.querySelector(
+      "[data-testid='altTextInput']"
+    ) as HTMLTextAreaElement;
     const stream = await this.openai.chat.completions.create({
       model: "gpt-4-vision-preview",
       max_tokens: 1024,
@@ -20,7 +23,7 @@ class ContentScript {
           content: [
             {
               type: "text",
-              text: "この画像を解析して、代替テキストとして出力してください。",
+              text: "画像に写っている主要な要素、色、アクション、雰囲気、およびその他の関連する詳細を具体的に説明してください。視覚情報を言葉で正確に伝えるための詳細な説明を目指します。文字は最大1000文字以内ですが、できるだけ短く簡潔に表してください。",
             },
             {
               type: "image_url",
@@ -34,9 +37,7 @@ class ContentScript {
       stream: true,
     });
 
-    const textarea = document.querySelector(
-      "[data-testid='altTextInput']"
-    ) as HTMLTextAreaElement;
+    textarea.value = "";
 
     for await (const chunk of stream) {
       textarea.value += chunk.choices[0]?.delta?.content || "";
@@ -62,24 +63,87 @@ class ContentScript {
     });
   }
 
+  public appendStyles() {
+    const css = `
+    .loader,
+    .loader:after {
+      border-radius: 50%;
+      width: 1em;
+      height: 1em;
+    }
+    .loader {
+      margin: 0 auto;
+      font-size: 10px;
+      position: relative;
+      text-indent: -9999em;
+      border-top: 0.2em solid rgba(0,0,0, 0.2);
+      border-right: 0.2em solid rgba(0,0,0, 0.2);
+      border-bottom: 0.2em solid rgba(0,0,0, 0.2);
+      border-left: 0.2em solid #000000;
+      -webkit-transform: translateZ(0);
+      -ms-transform: translateZ(0);
+      transform: translateZ(0);
+      -webkit-animation: load8 1.1s infinite linear;
+      animation: load8 1.1s infinite linear;
+      position: absolute;
+      right: 6px;
+      bottom: 6px;
+      display: none;
+    }
+    @-webkit-keyframes load8 {
+      0% {
+        -webkit-transform: rotate(0deg);
+        transform: rotate(0deg);
+      }
+      100% {
+        -webkit-transform: rotate(360deg);
+        transform: rotate(360deg);
+      }
+    }
+    @keyframes load8 {
+      0% {
+        -webkit-transform: rotate(0deg);
+        transform: rotate(0deg);
+      }
+      100% {
+        -webkit-transform: rotate(360deg);
+        transform: rotate(360deg);
+      }
+    }
+      .alt-generator-button {
+        margin-top: 8px;
+        margin-bottom: 8px;
+        border: 1px solid black;
+        border-radius: 99em;
+        background: white;
+        padding: 6px;
+        cursor: pointer;
+      }
+    `;
+
+    const style = document.createElement("style");
+    style.appendChild(document.createTextNode(css));
+    document.head.appendChild(style);
+  }
+
   public insertButton(targetElement: Element) {
     const button = document.createElement("button");
-    button.classList.add("my-button");
-    button.style.marginTop = "8px";
-    button.style.marginBottom = "8px";
-    button.style.border = "1px solid black";
-    button.style.borderRadius = "99em";
-    button.style.background = "white";
-    button.style.padding = "4px";
-    button.style.cursor = "pointer";
-
+    button.className = "alt-generator-button";
     button.textContent = "代替テキストを生成🪄";
+
+    const loader = document.createElement("div");
+    loader.className = "loader";
+
+    targetElement.parentNode?.insertBefore(button, targetElement.nextSibling);
+    targetElement.appendChild(loader);
 
     button.addEventListener("click", async () => {
       const imgElement = document.querySelector('img[src^="blob:"]');
       const blobUrl = imgElement?.getAttribute("src");
 
       button.disabled = true;
+      button.textContent = "生成中⏳";
+      this.toggleLoader(true);
 
       if (blobUrl) {
         try {
@@ -89,7 +153,6 @@ class ContentScript {
           const label = document.querySelector(
             'label[aria-label="代替テキスト"]'
           );
-          console.log(label);
           if (label) {
             // ラベルが見つかったらフォーカスを当てる
             (label as HTMLInputElement).focus();
@@ -102,11 +165,11 @@ class ContentScript {
           console.error("画像の変換に失敗しました:", error);
         } finally {
           button.disabled = false;
+          this.toggleLoader(false);
+          button.textContent = "代替テキストを生成🪄";
         }
       }
     });
-
-    targetElement.parentNode?.insertBefore(button, targetElement.nextSibling);
   }
 
   public handleButtonClick(event: Event) {
@@ -127,17 +190,32 @@ class ContentScript {
         } else {
           console.log("目的の要素が見つかりませんでした。");
         }
-      }, 300);
+      }, 200);
+    }
+  }
+
+  // ローダーの表示/非表示を切り替える関数
+  public toggleLoader(display: boolean) {
+    const loader = document.querySelector(".loader");
+    if (loader) {
+      const loader = document.querySelector(".loader") as HTMLElement;
+      loader.style.display = display ? "block" : "none";
     }
   }
 
   public initialize() {
+    this.appendStyles();
     document.addEventListener("click", this.handleButtonClick.bind(this));
   }
 }
 
 chrome.storage.sync.get(["openaiApiKey"], function (result) {
   const apiKey = result.openaiApiKey;
-  const contentScript = new ContentScript(apiKey);
-  contentScript.initialize();
+
+  if (apiKey) {
+    const contentScript = new ContentScript(apiKey);
+    contentScript.initialize();
+  } else {
+    console.error("OpenAI API Keyが設定されていません。");
+  }
 });
