@@ -1,10 +1,13 @@
 class ContentScript {
+  private readonly buttonClassName = "alt-generator-button";
+  private readonly loaderClassName = "loader";
+
   constructor() {
     this.appendStyles();
     document.addEventListener("click", this.handleButtonClick.bind(this));
   }
 
-  public async convertBlobUrlToBase64(blobUrl: string) {
+  public async convertBlobUrlToBase64(blobUrl: string): Promise<string> {
     return new Promise<string>((resolve, reject) => {
       const img = new Image();
       img.onload = () => {
@@ -25,13 +28,13 @@ class ContentScript {
 
   public appendStyles() {
     const css = `
-    .loader,
-    .loader:after {
+    .${this.loaderClassName},
+    .${this.loaderClassName}:after {
       border-radius: 50%;
       width: 1em;
       height: 1em;
     }
-    .loader {
+    .${this.loaderClassName} {
       margin: 0 auto;
       font-size: 10px;
       position: relative;
@@ -70,7 +73,7 @@ class ContentScript {
         transform: rotate(360deg);
       }
     }
-      .alt-generator-button {
+      .${this.buttonClassName} {
         margin-top: 8px;
         margin-bottom: 8px;
         border: 1px solid black;
@@ -88,11 +91,11 @@ class ContentScript {
 
   public insertButton(targetElement: Element) {
     const button = document.createElement("button");
-    button.className = "alt-generator-button";
+    button.className = this.buttonClassName;
     button.textContent = "代替テキストを生成🪄";
 
     const loader = document.createElement("div");
-    loader.className = "loader";
+    loader.className = this.loaderClassName;
 
     targetElement.parentNode?.insertBefore(button, targetElement.nextSibling);
     targetElement.appendChild(loader);
@@ -105,6 +108,7 @@ class ContentScript {
       ) as HTMLTextAreaElement;
 
       textarea.value = "";
+      textarea.focus();
       button.disabled = true;
       button.textContent = "生成中⏳";
       this.toggleLoader(true);
@@ -159,7 +163,9 @@ class ContentScript {
         const targetElement = document.querySelector(
           'label[aria-label="代替テキスト"]'
         );
-        const targetButton = document.querySelector("button.my-button");
+        const targetButton = document.querySelector(
+          `button.${this.buttonClassName}`
+        );
 
         if (targetElement && !targetButton) {
           this.insertButton(targetElement);
@@ -172,9 +178,11 @@ class ContentScript {
 
   // ローダーの表示/非表示を切り替える関数
   public toggleLoader(display: boolean) {
-    const loader = document.querySelector(".loader");
+    const loader = document.querySelector(`.${this.loaderClassName}`);
     if (loader) {
-      const loader = document.querySelector(".loader") as HTMLElement;
+      const loader = document.querySelector(
+        `.${this.loaderClassName}`
+      ) as HTMLElement;
       loader.style.display = display ? "block" : "none";
     }
   }
