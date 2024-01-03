@@ -1,7 +1,7 @@
 {
   "name": "alt-text-generation-for-x",
   "version": "1.0.0",
-  "description": "「代替テキスト生成 for X」は、X上の画像に対して自動的に代替テキストを生成するChrome拡張機能です。",
+  "description": "「代替テキスト生成 for X」は、X上の画像に対して自動的に代替テキストを生成するChrome拡張です。",
   "main": "index.js",
   "scripts": {
     "watch": "webpack --config webpack/webpack.dev.js --watch",

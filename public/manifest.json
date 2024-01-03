@@ -2,7 +2,7 @@
   "manifest_version": 3,
 
   "name": "代替テキスト生成 for X（旧twitter）",
-  "description": "Chrome Extension, TypeScript, Visual Studio Code",
+  "description": "「代替テキスト生成 for X」は、X上の画像に対して自動的に代替テキストを生成するChrome拡張です。",
   "version": "1.0",
 
   "options_ui": {
