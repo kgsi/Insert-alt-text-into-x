@@ -58,15 +58,12 @@ const Options = () => {
     <>
       <div className="max-w-[640px] w-m p-6 flex flex-col gap-4 border-r h-full bg-white">
         <h1 className="text-xl font-bold">
-          代替テキスト生成 for X（旧twitter）
+          代替テキスト生成 for X（旧Twitter）
         </h1>
         <ul className="list-disc list-outside pl-4">
           <li>
             「代替テキスト生成 for
-            X」は、X上の画像に対して自動的に代替テキストを生成するChrome拡張機能です。
-          </li>
-          <li>
-            Xの代替テキスト挿入時に生成AIを使って生成する機能を提供します。
+            X（旧Twitter）」は、Xに投稿する画像を分析して、自動的に代替テキストを生成するChrome拡張です。
           </li>
           <li>代替テキスト生成にはOpenAI（ChatGPT）API Keyが必要です。</li>
         </ul>

@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
 
-  "name": "代替テキスト生成 for X（旧twitter）",
-  "description": "「代替テキスト生成 for X」は、X上の画像に対して自動的に代替テキストを生成するChrome拡張です。",
+  "name": "代替テキスト生成 for X（旧Twitter）",
+  "description": "「代替テキスト生成 for X（旧Twitter）」は、Xに投稿する画像を分析して、自動的に代替テキストを生成するChrome拡張です。",
   "version": "1.0",
 
   "options_ui": {
@@ -20,7 +20,7 @@
 
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
+      "matches": ["https://twitter.com/*", "https://x.com/*"],
       "js": ["js/vendor.js", "js/content_script.js"]
     }
   ],
