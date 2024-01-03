@@ -139,9 +139,15 @@ class ContentScript {
                 button.disabled = false;
                 button.textContent = "代替テキストを生成🪄";
               } else {
-                // ストリーミングレスポンスを受け取る
                 // 逐次更新されるテキストをtextareaに表示
                 response.text && (textarea.value += response.text);
+
+                // 'input'イベントを手動で発火させる
+                const event = new Event("input", {
+                  bubbles: true,
+                  cancelable: true,
+                });
+                textarea.dispatchEvent(event);
               }
             }
           });

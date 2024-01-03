@@ -71,7 +71,7 @@ const Options = () => {
 
           <label className="form-control w-full">
             <div className="label">
-              <span className="label-text">OpenAI（ChatGPT）API Key</span>
+              <span className="label-text">OpenAI API Key</span>
             </div>
             <input
               type="text"
