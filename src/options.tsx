@@ -1,20 +1,51 @@
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
+import OpenAI from "openai";
 
 const Options = () => {
   const [openaiApiKey, setOpenaiApiKey] = useState<string>("");
+  const [isError, setIsError] = useState<boolean>(false);
   const [isSaved, setIsSaved] = useState<boolean>(false);
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
 
-  const handleSubmit = () => {
-    chrome.storage.sync.set(
-      {
-        openaiApiKey,
-      },
-      () => {
-        setIsSaved(true);
-      }
-    );
+  const handleSubmit = async () => {
+    const openai = new OpenAI({
+      apiKey: openaiApiKey,
+      dangerouslyAllowBrowser: true,
+    });
+
+    try {
+      setIsProcessing(true);
+
+      await openai.chat.completions.create({
+        model: "gpt-4-vision-preview",
+        max_tokens: 5,
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: "This is a test.",
+              },
+            ],
+          },
+        ],
+      });
+      chrome.storage.sync.set(
+        {
+          openaiApiKey,
+        },
+        () => {
+          setIsSaved(true);
+        }
+      );
+    } catch (error) {
+      setIsError(true);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   useEffect(() => {
@@ -68,6 +99,26 @@ const Options = () => {
               </div>
             </div>
           )}
+          {isError && (
+            <div role="alert" className="alert alert-error">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="stroke-current shrink-0 h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <span>
+                無効なAPI Keyです。API Keyが正しいかどうか確認してください。
+              </span>
+            </div>
+          )}
 
           <label className="form-control w-full">
             <div className="label">
@@ -76,9 +127,16 @@ const Options = () => {
             <input
               type="text"
               placeholder="sk-XXXXXXXXXXXXXXXXXXXXXXXX"
-              className="input input-bordered w-full"
+              className={`input input-bordered w-full ${
+                isError && "input-error"
+              }`}
               value={openaiApiKey}
-              onChange={(e) => setOpenaiApiKey(e.target.value)}
+              disabled={isProcessing}
+              onChange={(e) => {
+                setOpenaiApiKey(e.target.value);
+                setIsError(false);
+                setIsSaved(false);
+              }}
             />
             <div className="label">
               <span className="label-text-alt">
@@ -93,7 +151,12 @@ const Options = () => {
               </span>
             </div>
           </label>
-          <button className="btn btn-primary" onClick={handleSubmit}>
+          <button
+            className="btn btn-primary"
+            onClick={handleSubmit}
+            disabled={isProcessing}
+          >
+            {isProcessing && <span className="loading loading-spinner"></span>}
             設定を保存
           </button>
         </div>

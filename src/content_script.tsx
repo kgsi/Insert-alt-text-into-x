@@ -133,7 +133,9 @@ class ContentScript {
           port.onMessage.addListener((response) => {
             this.toggleLoader(false);
             if (response.error) {
-              console.error(response.error);
+              button.disabled = false;
+              button.textContent = "代替テキストを生成🪄";
+              alert(response.error);
             } else {
               if (response.done) {
                 button.disabled = false;
