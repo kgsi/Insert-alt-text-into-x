@@ -1,47 +1,7 @@
-import OpenAI from "openai";
-
 class ContentScript {
-  private openai: OpenAI;
-
-  constructor(apiKey: string) {
-    this.openai = new OpenAI({
-      dangerouslyAllowBrowser: true,
-      apiKey: apiKey,
-    });
-  }
-
-  public async resOpenai(imageUrl: string) {
-    const textarea = document.querySelector(
-      "[data-testid='altTextInput']"
-    ) as HTMLTextAreaElement;
-    const stream = await this.openai.chat.completions.create({
-      model: "gpt-4-vision-preview",
-      max_tokens: 1024,
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text: "画像に写っている主要な要素、色、アクション、雰囲気、およびその他の関連する詳細を具体的に説明してください。視覚情報を言葉で正確に伝えるための詳細な説明を目指します。文字は最大1000文字以内ですが、できるだけ短く簡潔に表してください。",
-            },
-            {
-              type: "image_url",
-              image_url: {
-                url: imageUrl,
-              },
-            },
-          ],
-        },
-      ],
-      stream: true,
-    });
-
-    textarea.value = "";
-
-    for await (const chunk of stream) {
-      textarea.value += chunk.choices[0]?.delta?.content || "";
-    }
+  constructor() {
+    this.appendStyles();
+    document.addEventListener("click", this.handleButtonClick.bind(this));
   }
 
   public async convertBlobUrlToBase64(blobUrl: string) {
@@ -140,7 +100,11 @@ class ContentScript {
     button.addEventListener("click", async () => {
       const imgElement = document.querySelector('img[src^="blob:"]');
       const blobUrl = imgElement?.getAttribute("src");
+      const textarea = document.querySelector(
+        "[data-testid='altTextInput']"
+      ) as HTMLTextAreaElement;
 
+      textarea.value = "";
       button.disabled = true;
       button.textContent = "生成中⏳";
       this.toggleLoader(true);
@@ -150,23 +114,35 @@ class ContentScript {
           const base64Image: string = await this.convertBlobUrlToBase64(
             blobUrl
           );
-          const label = document.querySelector(
-            'label[aria-label="代替テキスト"]'
-          );
-          if (label) {
-            // ラベルが見つかったらフォーカスを当てる
-            (label as HTMLInputElement).focus();
-          } else {
-            console.log("指定されたlabel要素が見つかりませんでした。");
-          }
+          const promptText =
+            "説明：画像の主要な要素とアクションを簡潔に記述し、色、雰囲気、および関連する詳細を含めてください。テキストは短く、要点を押さえたものにしてください。";
 
-          await this.resOpenai(base64Image);
+          // ポートを介してbackground.jsにメッセージを送信し、レスポンスを待機
+          const port = chrome.runtime.connect({ name: "openaiStream" });
+
+          port.postMessage({
+            message: "fetchAltText",
+            imageUrl: base64Image,
+            promptText: promptText,
+          });
+
+          port.onMessage.addListener((response) => {
+            this.toggleLoader(false);
+            if (response.error) {
+              console.error(response.error);
+            } else {
+              if (response.done) {
+                button.disabled = false;
+                button.textContent = "代替テキストを生成🪄";
+              } else {
+                // ストリーミングレスポンスを受け取る
+                // 逐次更新されるテキストをtextareaに表示
+                response.text && (textarea.value += response.text);
+              }
+            }
+          });
         } catch (error) {
           console.error("画像の変換に失敗しました:", error);
-        } finally {
-          button.disabled = false;
-          this.toggleLoader(false);
-          button.textContent = "代替テキストを生成🪄";
         }
       }
     });
@@ -202,20 +178,6 @@ class ContentScript {
       loader.style.display = display ? "block" : "none";
     }
   }
-
-  public initialize() {
-    this.appendStyles();
-    document.addEventListener("click", this.handleButtonClick.bind(this));
-  }
 }
 
-chrome.storage.sync.get(["openaiApiKey"], function (result) {
-  const apiKey = result.openaiApiKey;
-
-  if (apiKey) {
-    const contentScript = new ContentScript(apiKey);
-    contentScript.initialize();
-  } else {
-    console.error("OpenAI API Keyが設定されていません。");
-  }
-});
+new ContentScript();
