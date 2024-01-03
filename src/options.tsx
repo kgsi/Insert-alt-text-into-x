@@ -62,8 +62,7 @@ const Options = () => {
         </h1>
         <ul className="list-disc list-outside pl-4">
           <li>
-            「代替テキスト生成 for
-            X（旧Twitter）」は、Xに投稿する画像を分析して、自動的に代替テキストを生成するChrome拡張です。
+            X（旧Twitter）に投稿する画像を分析して、自動的に代替テキストを生成するChrome拡張です。
           </li>
           <li>代替テキスト生成にはOpenAI（ChatGPT）API Keyが必要です。</li>
         </ul>
